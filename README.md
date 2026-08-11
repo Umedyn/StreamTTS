@@ -4,7 +4,7 @@ A lightweight, portable Twitch chat text-to-speech tool for streamers. It listen
 to a channel's chat and speaks subs, resubs, gift subs, Prime subs, raids, cheers,
 chat commands, and channel point redemptions out loud through your audio device
 using [Piper](https://github.com/OHF-Voice/piper1-gpl) — fully local, no cloud, no
-API keys for the core features.
+API keys for the core features. Templates can fire sound effects too.
 
 Set your channel, add a voice, run it. Works on Windows, macOS, and Linux.
 
@@ -18,6 +18,8 @@ Set your channel, add a voice, run it. Works on Windows, macOS, and Linux.
 - [What Gets Spoken](#what-gets-spoken)
 - [Commands](#commands)
 - [Channel Point Redeems](#channel-point-redeems)
+- [Sound Effects](#sound-effects)
+- [Busy Streams (Subathons & Hype Trains)](#busy-streams-subathons--hype-trains)
 - [Testing Your Setup](#testing-your-setup)
 - [Troubleshooting](#troubleshooting)
 - [Limitations](#limitations)
@@ -170,11 +172,19 @@ default = ""            # a filename in voices/; "" = first found
 mode = "default"        # "default" | "random" | "per_user"
 length_scale = 0.95     # >1.0 slower, <1.0 faster
 pitch_semitones = 0.0   # naive shift — also changes speed. Leave at 0 normally.
+preload = true          # load all voices at startup (no first-use hitch). See note below.
 ```
 
 - **`default`** — always the default voice.
 - **`random`** — a random voice per message.
 - **`per_user`** — each chatter is consistently mapped to the same voice.
+
+> **`preload`** loads every voice when the program starts, so the first sub in a
+> given voice doesn't pause mid-stream while it loads. Each loaded voice holds its
+> own model in RAM (~50–150 MB for a medium voice), so for a handful of voices leave
+> it `true`. If you run a large library in `random` mode (dozens of voices), set it
+> `false` — voices then load on first use, and the default voice is still warmed at
+> startup so your most common path never hitches.
 
 ### Filters
 
@@ -183,6 +193,10 @@ pitch_semitones = 0.0   # naive shift — also changes speed. Leave at 0 normall
 max_chars = 300
 ignore_users = ["nightbot", "streamelements", "moobot", "streamlabs"]
 ```
+
+Sound effects and the busy-stream backlog cap have their own config blocks —
+see [Sound Effects](#sound-effects) and
+[Busy Streams](#busy-streams-subathons--hype-trains).
 
 ---
 
@@ -207,7 +221,8 @@ enabled = true
 template = "{user} resubscribed for {months} months at {tier}. {message}"
 ```
 
-Set `enabled = false` on any event to silence just that type.
+Set `enabled = false` on any event to silence just that type. Templates can also
+fire sound effects — see [Sound Effects](#sound-effects).
 
 ---
 
@@ -296,6 +311,63 @@ at <https://dev.twitch.tv/console/apps> with **Client Type: Public**, and set
 
 ---
 
+## Sound Effects
+
+Any template can play a sound with a `{sfx "file"}` tag. Drop sound files in the
+`sfx/` folder and reference them by name:
+
+```toml
+[events.sub]
+enabled = true
+template = '{sfx "airhorn.wav"} {user} just subscribed at {tier}!'
+```
+
+That plays `airhorn.wav`, then speaks the line. Place tags anywhere, and use as many
+as you like:
+
+```toml
+template = '{sfx "drumroll.wav"} {user} raided with {count} viewers! {sfx "cheer.wav"}'
+```
+
+Set the folder (optional — defaults to `sfx`):
+
+```toml
+[sfx]
+folder = "sfx"
+```
+
+Things to know:
+
+- Use **single quotes** around the template in TOML so the inner double quotes work.
+- Sounds and speech play **in order, one at a time** — an sfx never plays over the TTS.
+- **WAV, FLAC, and OGG** always work. MP3 usually works, but WAV/OGG is the safe
+  choice for something you distribute.
+- Put files directly in `sfx/`; the tag names a file in that folder only.
+- **Only your templates can trigger sounds.** If a viewer types `{sfx "..."}` in a
+  sub message, `!tts`, or a redeem, it's stripped before anything plays — chat can't
+  touch your soundboard.
+
+---
+
+## Busy Streams (Subathons & Hype Trains)
+
+Messages are queued and played one at a time, so a burst of subs, gifts, and cheers
+lines up in order instead of overlapping — no setup needed. Two things keep a flood
+manageable:
+
+- **Community gifts announce once.** A "gift 50 subs" drop is spoken as a single
+  "gifting 50 subs to the community" line, not 50 separate "gifted a sub to X"
+  messages. This is automatic.
+- **Optional backlog cap.** On a long hype train the queue can outrun the moment.
+  Cap it so the oldest messages drop and TTS stays current:
+
+```toml
+[queue]
+max = 0        # max queued messages; 0 = unlimited. Try 20–30 for a busy subathon.
+```
+
+---
+
 ## Testing Your Setup
 
 A self-test checks each part in isolation so a failure tells you exactly what broke:
@@ -351,6 +423,11 @@ Check three things: the reward's title matches a `[[redeems.reward]]` entry, the
 reward has **"Require Viewer to Enter Text"** enabled, and you completed the login.
 Redeems with no text input have nothing to read.
 
+**A sound effect doesn't play.**
+Confirm the file is directly inside the `sfx/` folder and the name in the tag matches
+exactly. Try a WAV if an MP3 won't load. Sounds only fire from your own templates —
+never from viewer text.
+
 **macOS won't open it ("unidentified developer").**
 The files aren't signed. Allow it via System Settings → Privacy & Security → **Open
 Anyway**, or run `xattr -d com.apple.quarantine run.sh` once.
@@ -379,6 +456,7 @@ its index as `output_device`:
 - **All-chat mode** (reading every message) is off by design — only commands and
   events are spoken.
 - **Multi-speaker voices** use speaker 0 only.
+- **Sound effects play sequentially**, not layered under the speech.
 
 ---
 
@@ -393,6 +471,7 @@ StreamTTS/
 ├─ config.toml
 ├─ python\            Windows bundle — in the RELEASE zip, not in the source repo
 ├─ voices\            your .onnx + .onnx.json pairs
+├─ sfx\               your sound effect files (.wav / .ogg / .flac)
 └─ src\
    ├─ main.py
    ├─ twitch.py       anonymous IRC reader (subs, cheers, raids, commands)

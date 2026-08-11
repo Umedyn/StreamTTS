@@ -1,63 +1,70 @@
 [twitch]
-channel = "your_channel_name"   # no leading '#'
+channel = 'your_channel_name'   # no leading '#'
 
 [audio]
 # -1 = system default. Run `run.bat --list-devices` to get an index.
 output_device = -1
 
 [voices]
-folder = "voices"
-default = ""            # filename in voices/; "" = first found alphabetically
-mode = "default"        # "default" | "random" | "per_user"
+folder = 'voices'
+default = ''            # filename in voices/; '' = first found alphabetically
+mode = 'default'        # 'default' | 'random' | 'per_user'
 length_scale = 0.95     # >1 slower, <1 faster (real Piper param)
 pitch_semitones = 0.0   # naive resample: also shifts speed. Leave 0 unless you want chipmunk/deep.
+preload = true          # load all voices at startup. Set false if you have a large voice library.
+
+[sfx]
+folder = 'sfx'
 
 [filters]
 max_chars = 300
-ignore_users = ["nightbot", "streamelements", "moobot", "streamlabs"]
+ignore_users = ['nightbot', 'streamelements', 'moobot', 'streamlabs']
 
 [commands]
-prefix = "!"
+prefix = '!'
 cooldown = 30          # seconds, per command. 0 = no cooldown.
 
 # Suggested commands — uncomment and edit to enable. {user} and {message} are available.
 [commands.map]
-# tts = "{user} says: {message}"
-# say = "{message}"
+# tts = '{user} says: {message}'
+# say = '{message}'
 
 [events.sub]
 enabled = true
-template = "{user} just subscribed at {tier}!"
+template = '{sfx "airhorn.wav"} {user} just subscribed at {tier}!'
 
 [events.resub]
 enabled = true
-template = "{user} resubscribed for {months} months at {tier}. {message}"
+template = '{user} resubscribed for {months} months at {tier}. {message}'
 
 [events.prime]
 # Optional override: used for sub/resub when the plan is Prime. Falls back to sub/resub if disabled.
 enabled = true
-template = "{user} subscribed with Prime!"
+template = '{user} subscribed with Prime!'
 
 [events.subgift]
 enabled = true
-template = "{user} gifted a {tier} sub to {recipient}!"
+template = '{user} gifted a {tier} sub to {recipient}!'
 
 [events.submysterygift]
 enabled = true
-template = "{user} is gifting {count} subs to the community!"
+template = '{user} is gifting {count} subs to the community!'
 
 [events.cheer]
 enabled = true
-template = "{user} cheered {bits} bits. {message}"
+template = '{user} cheered {bits} bits. {message}'
 
 [events.raid]
 enabled = true
-template = "{user} is raiding with {count} viewers!"
+template = '{user} is raiding with {count} viewers!'
 
 [redeems]
 enabled = true
 
 [[redeems.reward]]
-title = "Redeem Name Exactly"   # matched case-insensitively
-template = "{user} asks: {message}"
+title = 'Redeem Name Exactly'   # matched case-insensitively
+template = '{user} asks: {message}'
 # voice comes from a [name] prefix in the viewer's message, else random
+
+[queue]
+max = 0        # max queued messages; 0 = unlimited. Try 20-30 for a busy subathon.
