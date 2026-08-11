@@ -53,3 +53,11 @@ template = "{user} cheered {bits} bits. {message}"
 [events.raid]
 enabled = true
 template = "{user} is raiding with {count} viewers!"
+
+[redeems]
+enabled = true
+
+[[redeems.reward]]
+title = "Redeem Name Exactly"   # matched case-insensitively
+template = "{user} asks: {message}"
+# voice comes from a [name] prefix in the viewer's message, else random

@@ -26,3 +26,18 @@ class VoicePool:
             h = int(hashlib.md5(user.lower().encode()).hexdigest(), 16)
             return self.voices[h % len(self.voices)]
         return self.default
+
+    def random_voice(self) -> str:
+        return random.choice(self.voices)
+
+    def find(self, name: str):
+        if not name:
+            return None
+        needle = name.strip().lower()
+        for v in self.voices:                      # exact stem: "en_US-amy-medium"
+            if Path(v).stem.lower() == needle:
+                return v
+        for v in self.voices:                      # substring: "amy" -> en_US-amy-medium
+            if needle in Path(v).stem.lower():
+                return v
+        return None

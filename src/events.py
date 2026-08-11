@@ -2,6 +2,15 @@ from dataclasses import dataclass
 
 TIER_NAMES = {"Prime": "Prime", "1000": "Tier 1", "2000": "Tier 2", "3000": "Tier 3"}
 
+import re
+_VOICE_PREFIX = re.compile(r"^\s*\[([^\]]{1,32})\]\s*(.*)$", re.DOTALL)
+
+def parse_voice_prefix(message: str):
+    """'[amy] hello' -> ('amy', 'hello');  'hello' -> (None, 'hello')"""
+    m = _VOICE_PREFIX.match(message or "")
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return None, (message or "").strip()
 
 @dataclass
 class SpeakEvent:
@@ -14,6 +23,8 @@ class SpeakEvent:
     count: int = 0
     bits: int = 0
     command: str = ""
+    reward_title: str = ""
+    reward_id: str = ""
 
 
 def to_line(ev: SpeakEvent, config: dict):

@@ -2,9 +2,9 @@
 
 A lightweight, portable Twitch chat text-to-speech tool for streamers. It listens
 to a channel's chat and speaks subs, resubs, gift subs, Prime subs, raids, cheers,
-and configurable chat commands out loud through your audio device using
-[Piper](https://github.com/OHF-Voice/piper1-gpl) — fully local, no cloud, no API keys
-for the core features.
+chat commands, and channel point redemptions out loud through your audio device
+using [Piper](https://github.com/OHF-Voice/piper1-gpl) — fully local, no cloud, no
+API keys for the core features.
 
 Set your channel, add a voice, run it. Works on Windows, macOS, and Linux.
 
@@ -17,7 +17,7 @@ Set your channel, add a voice, run it. Works on Windows, macOS, and Linux.
 - [Configuration](#configuration)
 - [What Gets Spoken](#what-gets-spoken)
 - [Commands](#commands)
-- [Channel Point Redeems](#channel-point-redeems-optional)
+- [Channel Point Redeems](#channel-point-redeems)
 - [Testing Your Setup](#testing-your-setup)
 - [Troubleshooting](#troubleshooting)
 - [Limitations](#limitations)
@@ -233,15 +233,17 @@ command fires at most once every 30 seconds. Set `cooldown = 0` to disable.
 
 ---
 
-## Channel Point Redeems (optional)
+## Channel Point Redeems
 
-Unlike everything above, channel point redemptions are **not** available anonymously
-— Twitch gates channel point data behind your own account. Reading them requires a
-**one-time login** with your Twitch account (via EventSub). This is the only feature
-that isn't zero-auth; if you don't set up the login, redeems simply won't fire and
-everything else keeps working.
+Channel point redemptions can trigger TTS too. Unlike chat events (which are read
+anonymously), channel points are tied to your Twitch account — so this feature needs
+a **one-time login**. It's the only part of the tool that isn't zero-auth; everything
+else works without it.
 
-Rewards are matched by **title**:
+### Setup
+
+**1.** In `config.toml`, enable redeems and list the reward(s) you want spoken,
+matched by title:
 
 ```toml
 [redeems]
@@ -252,6 +254,21 @@ title = "Ask Sophia a Question"   # matched case-insensitively
 template = "{user} asks: {message}"
 ```
 
+**2.** On the Twitch reward itself, turn **"Require Viewer to Enter Text" ON.** The
+spoken message is the text the viewer types — a button-only reward has nothing to
+read.
+
+**3.** Run the tool. The first time, it prints a code:
+
+```
+Connect your Twitch account (channel point redeems)
+  1. Go to:      https://www.twitch.tv/activate
+  2. Enter code: WXYZ-1234
+```
+
+Open the link, enter the code, and authorize. The login is saved to `token.json` and
+refreshes itself automatically — you won't be asked again.
+
 ### Picking a voice per redeem
 
 A viewer can choose a voice by starting their message with `[voicename]`:
@@ -259,8 +276,23 @@ A viewer can choose a voice by starting their message with `[voicename]`:
 - `[amy] what's your favorite game?` → speaks in the `amy` voice
 - `what's your favorite game?` → speaks in a **random** voice
 
-The name matches against your voice filenames (e.g. `amy` matches
-`en_US-amy-medium`).
+The name matches against your voice filenames (e.g. `amy` matches `en_US-amy-medium`).
+
+### Switching or removing the account
+
+- **Re-login / switch account:** `run.bat --login` (or `./run.sh --login`)
+- **Log out:** delete `token.json`
+
+> **Adding or renaming rewards** only means editing `config.toml` — no re-auth
+> needed. The tool receives every reward's redemptions and the title list decides
+> which ones speak.
+
+### Distributing your own build
+
+The release build uses a Twitch app registered by the author, so end users never
+touch the dev console. If you fork and ship your **own** build, register your own app
+at <https://dev.twitch.tv/console/apps> with **Client Type: Public**, and set
+`CLIENT_ID` in `src/auth.py`.
 
 ---
 
@@ -314,6 +346,11 @@ If the channel is offline or quiet, there's nothing to read. Confirm the channel
 name and try while live. Remember: ordinary chat isn't spoken — only commands and
 sub/cheer/raid events.
 
+**A redeem doesn't speak.**
+Check three things: the reward's title matches a `[[redeems.reward]]` entry, the
+reward has **"Require Viewer to Enter Text"** enabled, and you completed the login.
+Redeems with no text input have nothing to read.
+
 **macOS won't open it ("unidentified developer").**
 The files aren't signed. Allow it via System Settings → Privacy & Security → **Open
 Anyway**, or run `xattr -d com.apple.quarantine run.sh` once.
@@ -339,8 +376,6 @@ its index as `output_device`:
 
 - **Cash donations** (Streamlabs / StreamElements / Ko-fi) aren't supported. They
   don't come through Twitch chat and need a separate connection with your own token.
-- **Channel point redeems** require the one-time EventSub login described above;
-  they're the only non-anonymous feature.
 - **All-chat mode** (reading every message) is off by design — only commands and
   events are spoken.
 - **Multi-speaker voices** use speaker 0 only.
@@ -360,7 +395,9 @@ StreamTTS/
 ├─ voices\            your .onnx + .onnx.json pairs
 └─ src\
    ├─ main.py
-   ├─ twitch.py
+   ├─ twitch.py       anonymous IRC reader (subs, cheers, raids, commands)
+   ├─ eventsub.py     EventSub WebSocket client (channel point redeems)
+   ├─ auth.py         Twitch device-code login + token storage
    ├─ events.py
    ├─ voices.py
    ├─ tts.py
@@ -369,9 +406,9 @@ StreamTTS/
    └─ selftest.py
 ```
 
-`python\` (Windows) and `.venv/` (macOS/Linux) are generated locally and are not
-part of the source repo — that's why source installs run `build.bat` / `run.sh`
-first.
+Generated locally and **not** committed to the source repo: `python\` (Windows
+bundle), `.venv/` (macOS/Linux), and `token.json` (your saved Twitch login — keep
+it private). That's why source installs run `build.bat` / `run.sh` first.
 
 ---
 
@@ -381,6 +418,6 @@ first.
 - **[Piper Voices](https://huggingface.co/rhasspy/piper-voices)** by Rhasspy /
   Michael Hansen — MIT-licensed voice models.
 - Connects to Twitch chat anonymously over IRC (read-only) for core events; channel
-  point redeems use Twitch EventSub with a one-time login.
+  point redeems use Twitch EventSub with a one-time device-code login.
 
 Built by Umedyn.
