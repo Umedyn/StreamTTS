@@ -10,6 +10,9 @@ from tts import PiperEngine, Speaker
 from twitch import TwitchChat
 from events import to_line
 from normalize import clean_text
+from cooldown import Cooldown
+
+cmd_cooldown = Cooldown(float(cfg.get("commands", {}).get("cooldown", 0)))
 
 
 def main():
@@ -32,6 +35,7 @@ def main():
         length_scale=float(vcfg.get("length_scale", 0.95)),
         pitch_semitones=float(vcfg.get("pitch_semitones", 0.0)),
     )
+    
     speaker = Speaker(engine, output_device=int(cfg.get("audio", {}).get("output_device", -1)))
 
     filters = cfg.get("filters", {})
@@ -39,6 +43,9 @@ def main():
     def on_event(ev):
         line = to_line(ev, cfg)
         if not line:
+            return
+        if ev.kind == "command" and not cmd_cooldown.ready(ev.command):
+            print(f"[Command] '{ev.command}' on cooldown ({cmd_cooldown.remaining(ev.command):.0f}s)")
             return
         line = clean_text(line)
         if not line:

@@ -18,10 +18,12 @@ ignore_users = ["nightbot", "streamelements", "moobot", "streamlabs"]
 
 [commands]
 prefix = "!"
+cooldown = 30          # seconds, per command. 0 = no cooldown.
+
+# Suggested commands — uncomment and edit to enable. {user} and {message} are available.
 [commands.map]
-# command (without prefix) -> template. Available: {user} {message}
-tts = "{user} says: {message}"
-say = "{message}"
+# tts = "{user} says: {message}"
+# say = "{message}"
 
 [events.sub]
 enabled = true
