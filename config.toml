@@ -1,0 +1,53 @@
+[twitch]
+channel = "your_channel_name"   # no leading '#'
+
+[audio]
+# -1 = system default. Run `run.bat --list-devices` to get an index.
+output_device = -1
+
+[voices]
+folder = "voices"
+default = ""            # filename in voices/; "" = first found alphabetically
+mode = "default"        # "default" | "random" | "per_user"
+length_scale = 0.95     # >1 slower, <1 faster (real Piper param)
+pitch_semitones = 0.0   # naive resample: also shifts speed. Leave 0 unless you want chipmunk/deep.
+
+[filters]
+max_chars = 300
+ignore_users = ["nightbot", "streamelements", "moobot", "streamlabs"]
+
+[commands]
+prefix = "!"
+[commands.map]
+# command (without prefix) -> template. Available: {user} {message}
+tts = "{user} says: {message}"
+say = "{message}"
+
+[events.sub]
+enabled = true
+template = "{user} just subscribed at {tier}!"
+
+[events.resub]
+enabled = true
+template = "{user} resubscribed for {months} months at {tier}. {message}"
+
+[events.prime]
+# Optional override: used for sub/resub when the plan is Prime. Falls back to sub/resub if disabled.
+enabled = true
+template = "{user} subscribed with Prime!"
+
+[events.subgift]
+enabled = true
+template = "{user} gifted a {tier} sub to {recipient}!"
+
+[events.submysterygift]
+enabled = true
+template = "{user} is gifting {count} subs to the community!"
+
+[events.cheer]
+enabled = true
+template = "{user} cheered {bits} bits. {message}"
+
+[events.raid]
+enabled = true
+template = "{user} is raiding with {count} viewers!"
