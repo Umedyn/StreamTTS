@@ -215,6 +215,7 @@ spoken aloud. Add or remove commands freely; `{user}` and `{message}` are availa
 
 > By default, ordinary chat messages are **not** read — only commands, so a busy
 > chat doesn't turn into wall-to-wall noise.
+> remove the lines to remove the commands
 
 ---
 
