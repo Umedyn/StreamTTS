@@ -4,6 +4,8 @@ channel = 'your_channel_name'   # no leading '#'
 [audio]
 # -1 = system default. Run `run.bat --list-devices` to get an index.
 output_device = -1
+volume = 1.0        # speech volume. 1.0 = normal, 0.5 = half, 1.5+ = louder (risks clipping)
+sfx_volume = 1.0     # sound effect volume, independent of speech volume
 
 [voices]
 folder = 'voices'

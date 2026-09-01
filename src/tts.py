@@ -24,6 +24,16 @@ def _ensure_espeak_data_path():
     except Exception as e:
         print(f"[TTS] Could not set ESPEAK_DATA_PATH: {e}")
 
+def _apply_gain(samples, gain: float):
+    """Scale playback volume. Clips rather than wraps/distorts past full scale."""
+    if gain == 1.0:
+        return samples
+    if np.issubdtype(samples.dtype, np.integer):
+        info = np.iinfo(samples.dtype)
+        out = np.clip(samples.astype(np.float32) * gain, info.min, info.max)
+        return out.astype(samples.dtype)
+    return np.clip(samples.astype(np.float32) * gain, -1.0, 1.0).astype(samples.dtype)
+
 
 class PiperEngine:
     def __init__(self, length_scale: float = 0.95, pitch_semitones: float = 0.0):
@@ -89,12 +99,15 @@ class PiperEngine:
 
 
 class Speaker:
-    def __init__(self, engine, output_device=-1, gap_ms=120, sfx_dir="sfx", max_queue=0):
+    def __init__(self, engine, output_device=-1, gap_ms=120, sfx_dir="sfx",
+                 max_queue=0, volume=1.0, sfx_volume=1.0):
         self.engine = engine
         self.device = None if output_device is None or output_device < 0 else int(output_device)
         self.gap_ms = int(gap_ms)
         self.sfx_dir = Path(sfx_dir)
         self.max_queue = int(max_queue)
+        self.volume = max(0.0, float(volume))
+        self.sfx_volume = max(0.0, float(sfx_volume))
         self._q = queue.Queue(maxsize=self.max_queue) if self.max_queue > 0 else queue.Queue()
         self._alive = threading.Event(); self._alive.set()
         self._t = threading.Thread(target=self._loop, name="tts_speaker", daemon=True)
@@ -135,19 +148,21 @@ class Speaker:
         samples, sr = self.engine.render(text, onnx)
         if samples is None:
             return
+        samples = _apply_gain(samples, self.volume)
         try:
             sd.play(samples, samplerate=sr, device=self.device); sd.wait()
         except Exception as e:
             print(f"[TTS] playback error: {e}")
 
     def _play_sfx(self, filename):
-        path = self.sfx_dir / Path(filename).name     # .name blocks ../ path traversal
+        path = self.sfx_dir / Path(filename).name
         if not path.exists():
             print(f"[SFX] not found: {path}")
             return
         try:
             import soundfile as sf
             data, sr = sf.read(str(path), dtype="float32")
+            data = _apply_gain(data, self.sfx_volume)
             sd.play(data, samplerate=sr, device=self.device); sd.wait()
         except Exception as e:
             print(f"[SFX] play error ({filename}): {e}")

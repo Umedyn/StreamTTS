@@ -47,6 +47,8 @@ def main():
         output_device=int(cfg.get("audio", {}).get("output_device", -1)),
         sfx_dir=str((root / cfg.get("sfx", {}).get("folder", "sfx")).resolve()),
         max_queue=int(cfg.get("queue", {}).get("max", 0)),
+        volume=float(cfg.get("audio", {}).get("volume", 1.0)),
+        sfx_volume=float(cfg.get("audio", {}).get("sfx_volume", 1.0)),
     )
 
     cmd_cooldown = Cooldown(float(cfg.get("commands", {}).get("cooldown", 0)))

@@ -161,7 +161,14 @@ channel = "your_channel_name"   # your Twitch name, no leading '#'
 [audio]
 # -1 = system default. List devices with: run.bat --list-devices  (or ./run.sh --list-devices)
 output_device = -1
+volume = 1.0         # speech volume. 1.0 = normal, 0.5 = half, 1.5+ = louder (risks clipping)
+sfx_volume = 1.0     # sound effect volume, independent of speech volume
 ```
+
+`volume` and `sfx_volume` are separate on purpose — sound effects and speech
+naturally want different levels. Values above ~1.3–1.5 start to sound squashed
+rather than louder; see [Troubleshooting](#troubleshooting) if that happens.
+Changing either requires a restart to take effect.
 
 ### Voices
 
@@ -408,6 +415,11 @@ Install it: `sudo apt install libportaudio2` (or your distro's `portaudio` packa
 **No sound.**
 List devices (`run.bat --list-devices` / `./run.sh --list-devices`), set the right
 index under `[audio] output_device`, and check the OS volume/mixer for the app.
+
+**Speech or sound effects sound distorted/crackly.**
+`volume` or `sfx_volume` is set too high and clipping. Lower it back toward `1.0` in
+`config.toml` and restart — values above ~1.3–1.5 squash the audio instead of making
+it louder.
 
 **"No .onnx voices found" or a voice won't load.**
 Both the `.onnx` and its `.onnx.json` must be in `voices/`, together, unrenamed. A
