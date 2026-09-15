@@ -89,13 +89,18 @@ def main():
             print(f"[Redeem] ({ev.reward_title}) voice={vname or 'random'}")
             return
 
+        vname = None
+        if ev.kind == "command":
+            vname, ev.message = parse_voice_prefix(ev.message)
+
         line = to_line(ev, cfg)
         if not line:
             return
         if ev.kind == "command" and not cmd_cooldown.ready(ev.command):
             print(f"[Command] '{ev.command}' on cooldown ({cmd_cooldown.remaining(ev.command):.0f}s)")
             return
-        _speak_line(line, pool.pick(user=ev.user))
+        voice = (pool.find(vname) if vname else None) or pool.pick(user=ev.user)
+        _speak_line(line, voice)
         print(f"[Speak] ({ev.kind})")
 
     # --- Twitch chat (anonymous IRC) ---
